@@ -1,19 +1,29 @@
 package br.com.awsdocker.resource
 
-import org.springframework.web.bind.annotation.GetMapping
-import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RestController
+import br.com.awsdocker.model.Beer
+import br.com.awsdocker.repository.RepositoryBeers
+import org.springframework.http.HttpStatus
+import org.springframework.web.bind.annotation.*
 import java.util.*
+import javax.validation.Valid
 
 @RestController
 @RequestMapping("/beers")
-class BeerResource {
+class BeerResource(val repository: RepositoryBeers) {
 
 
     @GetMapping
-    fun all(): List<String>{
-        return Arrays.asList("Itaipava", "Colorado", "Stella Artois", "Bohemia")
+    fun all(): List<Beer> {
+        return repository.findAll()
     }
+
+    @PostMapping
+    @ResponseStatus(HttpStatus.CREATED)
+    fun create(@Valid @RequestBody beer: Beer) : Beer{
+       return repository.save(beer)
+
+    }
+
 
 
 }
