@@ -1,5 +1,6 @@
 package br.com.awsdocker.exception
 
+import com.fasterxml.jackson.databind.exc.InvalidFormatException
 import org.slf4j.LoggerFactory
 import org.springframework.context.MessageSource
 import org.springframework.context.NoSuchMessageException
@@ -33,7 +34,29 @@ class ApiExceptionHandler(val apiErrorMessageSource: MessageSource) {
 
     }
 
-    fun toApiError(code: String, locale: Locale): ApiError{
+    @ExceptionHandler(InvalidFormatException::class)
+    fun handleInvalidFormatException(exception: InvalidFormatException
+                                     , locale: Locale): ResponseEntity<ErrorResponse?>? {
+
+        val apiError = toApiError("generic-1", locale)
+        val errors = mutableListOf<ApiError>(apiError)
+
+        val errorResponse = ErrorResponse(HttpStatus.BAD_REQUEST.value(), errors)
+        return ResponseEntity.badRequest().body(errorResponse)
+    }
+
+    @ExceptionHandler(Exception::class)
+    fun handlerInternalServerError(exception: Exception, locale: Locale): ResponseEntity<ErrorResponse?>? {
+        LOG.error("Error not expected", exception)
+        val apiError = toApiError("error-1", locale)
+        val errors = mutableListOf<ApiError>(apiError)
+
+        val status = HttpStatus.INTERNAL_SERVER_ERROR
+        val errorResponse = ErrorResponse(status.value(), errors)
+        return ResponseEntity.status(status).body(errorResponse)
+    }
+
+    fun toApiError(code: String, locale: Locale): ApiError {
         var message: String?
         try{
             message =  apiErrorMessageSource.getMessage(code, null, locale)
@@ -44,4 +67,9 @@ class ApiExceptionHandler(val apiErrorMessageSource: MessageSource) {
 
         return ApiError(code, message)
     }
+
+
+
+
+
 }
