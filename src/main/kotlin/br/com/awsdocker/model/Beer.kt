@@ -7,22 +7,20 @@ import javax.validation.constraints.NotBlank
 import javax.validation.constraints.NotNull
 
 @Entity
-data class Beer constructor(
+data class Beer(
+
         @Id
         @SequenceGenerator(name = "beer_seq", sequenceName = "beer_seq", allocationSize = 1)
         @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "beer_seq")
-        var id: Long? = null,
-
+        val id: Long,
 
         @get:NotBlank(message = "beers-1")
-        var name: String? = null,
+        var name: String,
 
         @get:NotNull(message = "beers-2")
-        var type: BeerType? = null,
+        var type: BeerType,
 
         @get:NotNull(message = "beers-3")
         @get:DecimalMin("0", message = "beers-4")
-        var volume: BigDecimal? = null){
-        constructor() : this( null, null, null, null)
-
-}
+        var volume: BigDecimal
+)

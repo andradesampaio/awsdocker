@@ -19,6 +19,7 @@ class ApiExceptionHandler(val apiErrorMessageSource: MessageSource) {
 
     private val NO_MESSAGE_AVAILABLE: String = "No message available"
     private val  LOG =  LoggerFactory.getLogger(ApiExceptionHandler::class.java)
+
     @ExceptionHandler(MethodArgumentNotValidException::class)
     fun handlerNotValidException(exception: MethodArgumentNotValidException, locale: Locale): ResponseEntity<ErrorResponse>{
 
