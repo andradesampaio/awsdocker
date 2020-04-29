@@ -1,6 +1,6 @@
 package br.com.awsdocker.service
 
-import br.com.awsdocker.exception.BeerAlreadyExitsException
+import br.com.awsdocker.exception.BusinessException
 import br.com.awsdocker.model.Beer
 import br.com.awsdocker.model.BeerType
 import br.com.awsdocker.repository.RepositoryBeers
@@ -32,7 +32,7 @@ class BeerServiceTest {
 
         val newBeer = Beer(1L,"Heineken", BeerType.LAGER, BigDecimal(355))
 
-        assertThrows<BeerAlreadyExitsException> { service.save(newBeer) }
+        assertThrows<BusinessException> { service.save(newBeer) }
 
     }
 

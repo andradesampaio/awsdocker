@@ -1,5 +1,6 @@
 package br.com.awsdocker.model
 
+import com.fasterxml.jackson.annotation.JsonIgnore
 import java.math.BigDecimal
 import javax.persistence.*
 import javax.validation.constraints.DecimalMin
@@ -12,7 +13,7 @@ data class Beer(
         @Id
         @SequenceGenerator(name = "beer_seq", sequenceName = "beer_seq", allocationSize = 1)
         @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "beer_seq")
-        val id: Long,
+        var id: Long,
 
         @get:NotBlank(message = "beers-1")
         var name: String,
@@ -23,4 +24,14 @@ data class Beer(
         @get:NotNull(message = "beers-3")
         @get:DecimalMin("0", message = "beers-4")
         var volume: BigDecimal
-)
+){
+        @JsonIgnore
+        fun isNew(): Boolean {
+                return id == null
+        }
+
+        @JsonIgnore
+        fun alreadyExist(): Boolean {
+                return id != null
+        }
+}

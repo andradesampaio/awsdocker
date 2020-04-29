@@ -57,8 +57,19 @@ class ApiExceptionHandler(val apiErrorMessageSource: MessageSource) {
         return ResponseEntity.status(status).body(errorResponse)
     }
 
+    @ExceptionHandler(BusinessException::class)
+    fun handleBusinessException(exception: BusinessException, locale: Locale?): ResponseEntity<ErrorResponse?>? {
+
+        val apiError = toApiError(exception.code, locale!!)
+        val errors = mutableListOf<ApiError>(apiError)
+
+        val errorResponse = ErrorResponse(exception.status.value(), errors)
+
+        return ResponseEntity.badRequest().body(errorResponse)
+    }
+
     fun toApiError(code: String, locale: Locale): ApiError {
-        var message: String?
+        var message: String
         try{
             message =  apiErrorMessageSource.getMessage(code, null, locale)
         }catch (e: NoSuchMessageException){
