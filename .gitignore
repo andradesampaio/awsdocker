@@ -131,3 +131,6 @@ fabric.properties
 # .tfstate files
 *.tfstate
 *.tfstate.*
+
+#  Local key directories
+**/key/*
