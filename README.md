@@ -1,5 +1,5 @@
 # awsdocker
-Spring Boot, Aws e Terraform
+Spring Boot,Kotlin, Aws e Terraform
 
 # Criando Postgres no docker
 
