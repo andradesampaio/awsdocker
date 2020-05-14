@@ -13,6 +13,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.InjectMocks
 import org.mockito.Mock
 import org.mockito.junit.jupiter.MockitoExtension
+import java.lang.IllegalStateException
 import java.math.BigDecimal
 import java.util.*
 
@@ -32,7 +33,7 @@ class BeerServiceTest {
 
         val newBeer = Beer(1L,"Heineken", BeerType.LAGER, BigDecimal(355))
 
-        assertThrows<BusinessException> { service.save(newBeer) }
+        assertThrows<IllegalStateException> { service.save(newBeer) }
 
     }
 
