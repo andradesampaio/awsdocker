@@ -93,5 +93,102 @@ executar o comando: terraform apply para aplicar e criar sua rede e sub-redes
 Default region name = us-east-1
 Enter a value: (yes / no)
 
+# Criando chave assimétrica para acessar as instâncias
+criar uma pasta key
+
+comando para gerar as Keys: ssh-keygen -t rsa -b 4096 -o -a 100 -f key/beerstore_key
+
+associar key publica nas instancias 
+resource "aws_key_pair" "keypair" {
+  public_key = "${file("key/beerstore_key.pub")}"
+}
+
+# Criando Security Group para liberar acesso
+criar um arquivo security
+pegar o ip fixo linha de comando 
+curl -s ipinfo.io/ip
+
+resource "aws_security_group" "allow_ssh" {
+  vpc_id = "${aws_vpc.main.id}"
+  name = "security_allow_ssh"
+  ingress {
+    from_port = 22
+    to_port =22
+    protocol = "tcp"
+    cidr_blocks = ["189.77.182.237/32"]
+  }
+}
+
+adcionar no arquivo de instancia o security_group que voce criou 
+
+vpc_security_group_ids = ["${aws_security_group.allow_ssh.id}"]
+
+# Criando Internet Gateway para acessar instâncias pela internet
+no arquivo network vamos configurar route, gateway e associar 
+
+criando a gateway
+resource "aws_internet_gateway" "gtw" {
+  vpc_id = "${aws_vpc.main.id}"
+}
+
+criando rota para gateway
+resource "aws_route_table" "route_gtw" {
+   vpc_id = "${aws_vpc.main.id}"
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = "${aws_internet_gateway.gateway.id}"
+  }
+}
+
+
+Fazendo a associação
+
+resource "aws_route_table_association" "route_table_associatio" {
+  count = 3
+  route_table_id = "${aws_route_table.route_gateway.id}"
+  subnet_id = "${element(aws_subnet.public_subnet.*.id, count.index)}"
+}
+
+
+comando para alterar permissoes no arquivo da Key
+chmod 400 beerstore_key
+Testando a conexão 
+ssh -i key/beerstore_key ec2-user@11.141.125.125
+
+
+#Provisionando Postgres com RDS
+criar arquivo database.tf
+module "rds" {
+  source  = "terraform-aws-modules/rds/aws"
+  version = "~> 2.0"
+  identifier = "beerstore-rds"
+  engine = "postgres"
+  engine_version = "10.4"
+  instance_class = "db.t2.micro"
+  allocated_storage = 5
+  storage_encrypted = false
+  name = "beerstore"
+  username = "password"
+  password = "password"
+  port = "5432"
+  vpc_security_group_ids = [aws_security_group.database.id]
+  maintenance_window = "Thu:03:30-Thu:05:30"
+  backup_window = "05:30-06:30"
+  backup_retention_period = 0
+  subnet_ids = "${flatten(chunklist(aws_subnet.private_subnet.*.id, 1))}"
+  enabled_cloudwatch_logs_exports = ["postgresql", "upgrade"]
+  storage_type = "gp2"
+  multi_az = "false"
+  family = "postgres10"
+  major_engine_version = "10.4"
+  create_db_option_group = false
+  deletion_protection = false 
+}
+
+#Destruindo o ambiente todo
+comando terraform destroy
+
+
 
 
