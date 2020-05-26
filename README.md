@@ -98,6 +98,9 @@ criar uma pasta key
 
 comando para gerar as Keys: ssh-keygen -t rsa -b 4096 -o -a 100 -f key/beerstore_key
 
+comando para alterar permissoes no arquivo da Key
+chmod 400 beerstore_key
+
 associar key publica nas instancias 
 resource "aws_key_pair" "keypair" {
   public_key = "${file("key/beerstore_key.pub")}"
@@ -142,7 +145,7 @@ resource "aws_route_table" "route_gtw" {
 }
 
 
-Fazendo a associação
+##Fazendo a associação
 
 resource "aws_route_table_association" "route_table_associatio" {
   count = 3
@@ -188,6 +191,151 @@ module "rds" {
 
 #Destruindo o ambiente todo
 comando terraform destroy
+
+#Criando sua imagem e dockerizando a aplicação Java
+criar um arquivo Dockefile
+FROM openjdk:15-jdk-alpine
+MAINTAINER Andrade Sampaio <asampaio3006@gmail.com>
+RUN apk add --update bash
+ENV LANG C.UTF-8
+ADD build/libs/*.jar /app/app.jar
+CMD java -jar /app/app.jar $APP_OPTIONS
+###########################################
+"APP_OPTIONS" para passar paramentros na inicializaçao do docker
+Ex: APP_OPTIONS='--spring.datasource.url=jdbc:postgresql://beerdb:5432/beerstore'
+###########################################
+#Fazer build da imagem 
+
+docker build -t ID_DOCKERHUB/NOME_APLICAÇAO:0.1 .
+
+## Iniciar container
+docker run -p 8080:8080 asampaio3006/beerstore:0.1
+
+#Criando uma rede docker para comunicação dos containers
+criar rede 
+docker network create Nome_da_Rede
+
+adcionar container na rede
+docker network connect Nome_da_Rede
+inciar um container e add ele na rede.
+
+Opção
+-p -> porta da aplicação
+--network -> rede que o container vai usar 
+-e -> passar paramentros
+--rm --> para remover o container depois de finalizar
+
+docker run --rm -p 8080:8080 --network beer-network -e APP_OPTIONS='--spring.datasource.url=jdbc:postgresql://beerdb:5432/beerstore' asampaio3006/beerstore:0.1
+
+###Criando o primeiro playbook Ansible
+criar arquivo playbook.yml
+---
+- name: Ensure Docker is installed
+  hosts: all
+  remote_user: ec2-user
+  gather_facts: false
+  become: true
+  tasks:
+    - name: Install Docker
+      yum: name=docker
+
+    - name: Ensure docker service is started and enabled
+      service:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: Create directory for Portainer
+      file:
+        path: .portainer/data
+        state: directory
+        owner: ec2-user
+        group: ec2-user
+
+##Automatizando execução do Terraform com IP público
+crie um arquivo hosts.tpl
+onde serão salvo os ips criado na construção do ec2
+
+${PUBLIC_IP_0}
+${PUBLIC_IP_1}
+${PUBLIC_IP_2}
+
+
+no arquivo instance.tl adcione 
+vamos atribuir os ips no arquivo hosts
+
+data "template_file" "hosts" {
+  template = "${file("./template/hosts.tpl")}"
+
+  vars = {
+    PUBLIC_IP_0 = "${aws_instance.instances.*.public_ip[0]}"
+    PUBLIC_IP_1 = "${aws_instance.instances.*.public_ip[1]}"
+    PUBLIC_IP_2 = "${aws_instance.instances.*.public_ip[2]}"
+  }
+}
+
+resource "local_file" "hosts" {
+  content = "${data.template_file.hosts.rendered}"
+  filename = "./hosts"
+}
+
+pegando ip externo 
+
+no arquivo variables adcione 
+variable "my_public_ip" {}
+
+no arquivo security.tl adcione 
+  cidr_blocks = ["${var.my_public_ip}"]
+
+vamos criar um arquivo run-terraform.tl
+#!/bin/bash
+
+echo "Provisioning infrastructure..."
+
+echo "Finding my public ip address..."
+MY_PUBLIC_IP="$(curl -s ipinfo.io/ip)"
+echo "... your public ip is $MY_PUBLIC_IP"
+
+echo "Starting terraform..."
+terraform apply -var "my_public_ip=$MY_PUBLIC_IP/32"
+
+##Autorizando outbound via Security Group
+no arquivo security.tl
+adicione essa regra
+
+resource "aws_security_group" "allow_outbound" {
+  vpc_id = "${aws_vpc.main.id}"
+  name = "hibicode_allow_outbound"
+
+  egress {
+    from_port = 0
+    to_port = 0
+    protocol = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+}
+
+##Instalando o Docker nas máquinas EC2 com Ansible
+
+vamos criar um arquivo run-ansible.sh
+
+#!/bin/bash
+
+echo "Starting ansible..."
+#comando para nao solicitar confirmação de conexao
+ANSIBLE_HOST_KEY_CHECKING=false
+ansible-playbook -i ../terraform/hosts --private-key ../terraform/key/beerstore_key beerstore-playbook.yml -v
+
+
+
+
+
+
+
+
+
+
 
 
 
