@@ -327,6 +327,54 @@ echo "Starting ansible..."
 ANSIBLE_HOST_KEY_CHECKING=false
 ansible-playbook -i ../terraform/hosts --private-key ../terraform/key/beerstore_key beerstore-playbook.yml -v
 
+##Criando Security Group para Swarm
+no arquivo security.tl
+adicione essa regra
+
+resource "aws_security_group" "cluster_communication" {
+  vpc_id = "${aws_vpc.main.id}"
+  name = "hibicode_cluster_communication"
+
+  ingress {
+    from_port = 2377
+    to_port = 2377
+    protocol = "tcp"
+    self = true
+  }
+
+  ingress {
+    from_port = 7946
+    to_port = 7946
+    protocol = "tcp"
+    self = true
+  }
+
+  ingress {
+    from_port = 7946
+    to_port = 7946
+    protocol = "udp"
+    self = true
+  }
+
+  ingress {
+    from_port = 4789
+    to_port = 4789
+    protocol = "udp"
+    self = true
+  }
+
+}
+
+no arquivo instances.tl
+adcione a nova regra criada 
+vpc_security_group_ids =["${aws_security_group.cluster_communication.id}"]
+
+##Deploy da aplicação no Cluster
+acesso
+ssh -i ./key/beerstore_key ec2-user@IP
+
+sudo docker service create --name <NAME_CONTAINER> -e 
+SPRING_DATASOURCE_URL=jdbc:postgresql://URL_DO_RDS_DA_SUA_CONTA:5432/<NAME_DATABASE> -p 8080:8080 --network service <NOME_IMAGEM>:<VERSAO>
 
 
 
